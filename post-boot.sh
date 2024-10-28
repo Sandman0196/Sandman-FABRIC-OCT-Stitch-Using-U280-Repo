@@ -14,19 +14,18 @@ install_xrt() {
 }
 
 install_shellpkg() {
-
-if [[ "$U280" == 0 ]]; then
-    echo "[WARNING] No FPGA Board Detected."
-    exit 1;
-fi
-     
-for PF in U280; do
-    if [[ "$(($PF))" != 0 ]]; then
-        echo "You have $(($PF)) $PF card(s). "
-        PLATFORM=`echo "alveo-$PF" | awk '{print tolower($0)}'`
-        install_u280_shell
+    if [[ "$U280" == 0 ]]; then
+        echo "[WARNING] No FPGA Board Detected."
+        exit 1;
     fi
-done
+     
+    for PF in U280; do
+        if [[ "$(($PF))" != 0 ]]; then
+            echo "You have $(($PF)) $PF card(s). "
+            PLATFORM=`echo "alveo-$PF" | awk '{print tolower($0)}'`
+            install_u280_shell
+        fi
+    done
 }
 
 check_shellpkg() {
@@ -69,10 +68,8 @@ check_factory_shell() {
 install_u280_shell() {
     check_shellpkg
     if [[ $? != 0 ]]; then
-        # echo "Download Shell package"
-        # wget -cO - "https://www.xilinx.com/bin/public/openDownload?filename=$SHELL_PACKAGE" > /tmp/$SHELL_PACKAGE
         if [[ $SHELL_PACKAGE == *.tar.gz ]]; then
-            echo "Untar the package. "
+            echo "Untar the package."
             tar xzvf $SHELL_BASE_PATH/$TOOLVERSION/$OSVERSION/$SHELL_PACKAGE -C /tmp/
             rm /tmp/$SHELL_PACKAGE
         fi
@@ -86,18 +83,18 @@ install_u280_shell() {
         fi
         rm /tmp/xilinx*
     else
-        echo "The package is already installed. "
+        echo "The package is already installed."
     fi
 }
 
 flash_card() {
-    echo "Flash Card(s). "
+    echo "Flash Card(s)."
     /opt/xilinx/xrt/bin/xbmgmt program --base --device $PCI_ADDR
 }
 
 detect_cards() {
     lspci > /dev/null
-    if [ $? != 0 ] ; then
+    if [ $? != 0 ]; then
         if [[ "$OSVERSION" == "ubuntu-20.04" ]] || [[ "$OSVERSION" == "ubuntu-22.04" ]]; then
             apt-get install -y pciutils
         elif [[ "$OSVERSION" == "centos-7" ]] || [[ "$OSVERSION" == "centos-8" ]]; then
@@ -154,7 +151,6 @@ PACKAGE_VERSION=`grep ^$COMB: $SCRIPT_PATH/spec.txt | awk -F':' '{print $2}' | a
 XRT_VERSION=`grep ^$COMB: $SCRIPT_PATH/spec.txt | awk -F':' '{print $2}' | awk -F';' '{print $7}' | awk -F= '{print $2}'`
 FACTORY_SHELL="xilinx_u280_GOLDEN_8"
 NODE_ID=$(hostname | cut -d'.' -f1)
-#PCI_ADDR=$(lspci -d 10ee: | awk '{print $1}' | head -n 1)
 
 detect_cards
 check_xrt
@@ -163,7 +159,6 @@ if [ $? == 0 ]; then
 else
     echo "XRT is not installed. Attempting to install XRT..."
     install_xrt
-
     check_xrt
     if [ $? == 0 ]; then
         echo "XRT was successfully installed."
@@ -174,16 +169,13 @@ else
 fi
 
 install_libs
-# Disable PCIe fatal error reporting
-disable_pcie_fatal_error 
-
+disable_pcie_fatal_error
 install_config_fpga
 
-if [ "$WORKFLOW" = "Vitis" ] ; then
+if [ "$WORKFLOW" = "Vitis" ]; then
     check_shellpkg
     if [ $? == 0 ]; then
         echo "Shell is already installed."
-
     else
         echo "Shell is not installed. Installing shell..."
         install_shellpkg
@@ -192,8 +184,6 @@ if [ "$WORKFLOW" = "Vitis" ] ; then
             echo "Shell was successfully installed. Flashing..."
             flash_card
             /usr/local/bin/post-boot-fpga
-            #echo "Cold rebooting..."
-            #sudo -u geniuser perl /local/repository/cold-reboot.pl
         else
             echo "Error: Shell installation failed."
             exit 1
@@ -208,4 +198,4 @@ if [ "$WORKFLOW" = "Vitis" ] ; then
 else
     echo "Custom flow selected."
     install_xbflash
-fi    
+fi
